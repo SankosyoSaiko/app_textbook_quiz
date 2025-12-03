@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>参考書マイスターの挑戦状 Ver.9 (選べる難易度)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap');
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .flip-card {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .speech-bubble {
+            position: relative;
+            background: #ffffff;
+            border-radius: .4em;
+        }
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border: 10px solid transparent;
+            border-right-color: #ffffff;
+            border-left: 0;
+            border-top: 0;
+            margin-top: -5px;
+            margin-left: -10px;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="bg-indigo-50 text-gray-800 min-h-screen flex items-center justify-center p-4">
+
+    <!-- メインコンテナ -->
+    <div class="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden border border-indigo-100 relative">
+        
+        <!-- ヘッダーエリア -->
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-center text-white relative z-10">
+            <div class="absolute -bottom-8 left-1/2 transform -translate-x-1/2">
+                <div class="w-20 h-20 bg-white rounded-full border-4 border-indigo-500 flex items-center justify-center text-4xl shadow-lg relative">
+                    🧞‍♂️
+                    <span class="absolute -right-1 -top-1 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full border border-white">Ver.9</span>
+                </div>
+            </div>
+            <h1 class="text-xl font-bold mb-4">参考書の精霊<br><span class="text-sm opacity-80">〜無限の書架〜</span></h1>
+            
+            <!-- 管理画面ボタン -->
+            <button onclick="goToLogin()" class="absolute top-4 right-4 text-white hover:text-yellow-200 transition opacity-80 hover:opacity-100">
+                <span class="text-xs flex flex-col items-center">
+                    🔒 <span class="scale-75">管理</span>
+                </span>
+            </button>
+        </div>
+
+        <!-- コンテンツエリア -->
+        <div class="pt-12 pb-6 px-6">
+            
+            <!-- 精霊のセリフエリア -->
+            <div class="flex items-center mb-6 fade-in min-h-[80px]">
+                <div class="speech-bubble bg-indigo-50 p-4 rounded-xl w-full text-center shadow-sm border border-indigo-100">
+                    <p id="spirit-message" class="text-indigo-900 font-bold">さあ、私の知識ライブラリに挑むが良い。</p>
+                </div>
+            </div>
+
+            <!-- 1. スタート画面 -->
+            <div id="start-screen" class="text-center space-y-6">
+                <p class="text-sm text-gray-500">モードを選んで挑戦せよ。</p>
+                
+                <div class="grid grid-cols-1 gap-4">
+                    <button onclick="startGame('normal')" class="bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition transform hover:scale-105 text-left flex justify-between items-center group">
+                        <div>
+                            <span class="block text-lg">ノーマルモード</span>
+                            <span class="text-xs opacity-80 font-normal">順にヒント公開 / -10点</span>
+                        </div>
+                        <span class="text-2xl group-hover:translate-x-1 transition">📖</span>
+                    </button>
+
+                    <button onclick="startGame('hard')" class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition transform hover:scale-105 text-left flex justify-between items-center group">
+                        <div>
+                            <span class="block text-lg">ハードモード</span>
+                            <span class="text-xs opacity-80 font-normal">ヒント選択制 / -15点 / 運と直感</span>
+                        </div>
+                        <span class="text-2xl group-hover:translate-x-1 transition">🎲</span>
+                    </button>
+                </div>
+                
+                <div class="text-xs text-gray-400 mt-4">
+                    ※管理画面からデータの編集が可能です
+                </div>
+            </div>
+
+            <!-- 2. クイズ画面 -->
+            <div id="game-screen" class="hidden space-y-4">
+                <div class="flex justify-between items-center text-sm font-bold text-gray-500 bg-gray-100 px-4 py-2 rounded-lg">
+                    <span id="mode-badge" class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs">NORMAL</span>
+                    <div>SCORE <span id="current-score" class="text-orange-500 text-2xl font-mono ml-1">100</span></div>
+                </div>
+
+                <!-- ヒント表示エリア -->
+                <div id="hints-container" class="space-y-3 max-h-64 overflow-y-auto p-2 bg-gray-50 rounded-lg border border-gray-100 min-h-[150px]"></div>
+
+                <!-- 操作エリア -->
+                <div class="pt-4 border-t border-gray-100">
+                    
+                    <!-- ノーマルモード用ボタン -->
+                    <button id="next-hint-btn" onclick="showNextHint()" class="hidden w-full mb-4 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold py-2 rounded-lg transition text-sm flex justify-center items-center gap-2">
+                        <span>💡 次のヒントを見る</span>
+                        <span class="bg-white px-2 py-0.5 rounded text-xs text-indigo-500">-10点</span>
+                    </button>
+
+                    <!-- ハードモード用パネル -->
+                    <div id="select-hint-panel" class="hidden mb-4">
+                        <p class="text-xs text-center text-gray-400 mb-2">見たいヒントカードを選択（-15点）</p>
+                        <div id="hint-buttons-grid" class="grid grid-cols-5 gap-2">
+                            <!-- JSで生成 -->
+                        </div>
+                    </div>
+
+                    <div class="relative group mt-2">
+                        <label class="text-xs text-gray-400 ml-1 mb-1 block">回答を入力（リストから選択）</label>
+                        <input list="books-list" id="answer-input" class="w-full border-2 border-gray-300 rounded-lg p-3 focus:outline-none focus:border-indigo-500 transition text-lg" placeholder="参考書名を入力..." autocomplete="off">
+                        <datalist id="books-list"></datalist>
+                    </div>
+                    
+                    <button onclick="checkAnswer()" class="w-full mt-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 rounded-lg shadow-md transition transform active:scale-95">
+                        回答する
+                    </button>
+                    
+                    <button onclick="giveUp()" class="w-full mt-2 text-xs text-gray-400 hover:text-gray-600 underline">
+                        降参して答えを見る
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. 結果画面 -->
+            <div id="result-screen" class="hidden text-center space-y-6 fade-in">
+                <div id="result-icon" class="text-7xl mb-2 animate-bounce">🎉</div>
+                <h2 id="result-title" class="text-2xl font-bold text-gray-800">正解！</h2>
+                
+                <div class="bg-indigo-50 p-5 rounded-xl border border-indigo-100">
+                    <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Answer</p>
+                    <p id="result-book-name" class="text-xl font-bold text-indigo-900 mb-4 leading-relaxed">書籍名</p>
+                    
+                    <div class="grid grid-cols-2 gap-4 border-t border-indigo-200 pt-4">
+                        <div>
+                            <p class="text-xs text-gray-500">獲得スコア</p>
+                            <p id="final-score" class="text-3xl font-bold text-orange-500 font-mono">100</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">ランク</p>
+                            <p id="result-rank" class="text-xl font-bold text-indigo-600">S</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-3 rounded border border-gray-200 text-left text-sm text-gray-600">
+                    <p class="font-bold text-xs text-gray-400 mb-1">この本の豆知識</p>
+                    <p id="result-comment">解説コメントがここに入ります。</p>
+                </div>
+
+                <!-- SNSシェアボタン -->
+                <div class="flex gap-2 justify-center pt-2">
+                    <button onclick="shareOnTwitter()" class="flex-1 bg-black hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg shadow transition flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
+                        <span class="text-sm">Post</span>
+                    </button>
+                    <button onclick="shareOnLine()" class="flex-1 bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-2 px-4 rounded-lg shadow transition flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.5c-5.52 0-10 3.98-10 8.95 0 2.66 1.34 5.06 3.52 6.74.37.28.6.68.52 1.15-.1.57-.47 1.87-.55 2.18-.08.3-.01.59.25.75.25.17.65.1.98-.05.78-.34 4.18-1.87 4.54-2.03.26-.11.53-.17.81-.17.31.01.62.03.93.03 5.52 0 10-3.98 10-8.95S17.52 2.5 12 2.5z"/></svg>
+                        <span class="text-sm">LINE</span>
+                    </button>
+                </div>
+
+                <button onclick="resetGame()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-full shadow-lg transition mt-2">
+                    トップに戻る
+                </button>
+            </div>
+
+            <!-- 4. ログイン画面 -->
+            <div id="login-screen" class="hidden space-y-6 text-center fade-in">
+                <div class="py-4">
+                    <span class="text-5xl">🔒</span>
+                </div>
+                <h2 class="text-lg font-bold text-gray-800">管理者認証</h2>
+                <p class="text-sm text-gray-500">これより先は禁書庫（管理画面）です。<br>合言葉（パスワード）を入力してください。</p>
+                
+                <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4">
+                    <input id="admin-password" type="password" class="w-full p-3 border rounded-lg text-center text-lg focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition" placeholder="Password">
+                    <p class="text-xs text-gray-400">※デモ用パスワード: <span class="font-mono bg-gray-200 px-1 rounded">admin</span></p>
+                    
+                    <button onclick="attemptLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow transition">
+                        認証する
+                    </button>
+                </div>
+
+                <button onclick="backToStart()" class="text-sm text-gray-400 hover:text-gray-600 underline">
+                    戻る
+                </button>
+            </div>
+
+            <!-- 5. 管理画面 -->
+            <div id="admin-screen" class="hidden space-y-4 fade-in text-left flex flex-col h-[85vh]">
+                <div class="flex justify-between items-center border-b pb-2 mb-2 flex-shrink-0">
+                    <h2 class="text-lg font-bold text-gray-800">📚 データ管理センター</h2>
+                    <button onclick="logoutAdmin()" class="text-xs text-red-500 hover:text-red-700 font-bold border border-red-200 px-2 py-1 rounded bg-red-50">
+                        ログアウト
+                    </button>
+                </div>
+                
+                <!-- フォームエリア -->
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3 flex-1 overflow-y-auto">
+                    <div class="flex justify-between items-center">
+                        <h3 id="form-title" class="font-bold text-sm text-indigo-600">新規参考書を追加</h3>
+                        <button id="cancel-edit-btn" onclick="cancelEdit()" class="hidden text-xs text-gray-500 underline">キャンセル</button>
+                    </div>
+                    
+                    <div>
+                        <label class="text-xs font-bold text-gray-500">書籍名 (正解) *必須</label>
+                        <input id="new-title" type="text" class="w-full p-2 border rounded text-sm" placeholder="例：英単語Stock3000">
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-gray-500">豆知識・コメント</label>
+                        <input id="new-comment" type="text" class="w-full p-2 border rounded text-sm" placeholder="例：スタディサプリ関先生の著書。">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-gray-500">ヒント (最大10個)</label>
+                        <input id="new-hint-1" type="text" class="w-full p-2 border rounded text-xs" placeholder="ヒント1 *必須">
+                        <input id="new-hint-2" type="text" class="w-full p-2 border rounded text-xs" placeholder="ヒント2">
+                        <input id="new-hint-3" type="text" class="w-full p-2 border rounded text-xs" placeholder="ヒント3">
+                        <input id="new-hint-4" type="text" class="w-full p-2 border rounded text-xs" placeholder="ヒント4">
+                        <input id="new-hint-5" type="text" class="w-full p-2 border rounded text-xs" placeholder="ヒント5">
+                        <input id="new-hint-6" type="text" class="w-full p-2 border rounded text-xs" placeholder="ヒント6">
+                        <input id="new-hint-7" type="text" class="w-full p-2 border rounded text-xs" placeholder="ヒント7">
+                        <input id="new-hint-8" type="text" class="w-full p-2 border rounded text-xs" placeholder="ヒント8">
+                        <input id="new-hint-9" type="text" class="w-full p-2 border rounded text-xs" placeholder="ヒント9">
+                        <input id="new-hint-10" type="text" class="w-full p-2 border rounded text-xs" placeholder="ヒント10 (決定的なヒント) *推奨">
+                    </div>
+
+                    <button id="save-btn" onclick="handleSaveBook()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded shadow text-sm">
+                        リストに追加して保存
+                    </button>
+                    
+                    <div class="mt-6 pt-4 border-t border-gray-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-bold text-sm text-gray-600">全登録リスト（一括管理）</h3>
+                            <span id="custom-count" class="text-xs bg-gray-200 px-2 py-0.5 rounded-full font-bold text-gray-700">0</span>
+                        </div>
+                        <div id="books-list-container" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-2 pt-2 flex-shrink-0">
+                    <button onclick="exportData()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 rounded text-xs">
+                        全データをJSONでコピー (バックアップ用)
+                    </button>
+                    <button onclick="resetToDefault()" class="w-full text-red-400 hover:text-red-600 text-xs underline py-1">
+                        初期データに戻す（全リセット）
+                    </button>
+                    <button onclick="backToStart()" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 rounded-lg shadow mt-2">
+                        ゲームに戻る
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        //  1. 基本データセット (静的データ)
+        // ==========================================
+        const staticBooksData = [
+            // --- 英語 ---
+            { title: "チャート式 基礎からの数学（青チャート）", comment: "受験数学の王道中の王道。", hints: ["科目は数学だ。", "色は青色。", "網羅性が高い。", "数研出版。", "通称『青チャ』だ。"] },
+            { title: "システム英単語", comment: "ミニマルフレーズが革命的。", hints: ["科目は英語だ。", "ミニマルフレーズ。", "頻出順。", "駿台文庫。", "通称『シス単』だ。"] },
+            { title: "英単語Target1900", comment: "犬のマークでおなじみ。", hints: ["科目は英語だ。", "犬のシルエット。", "一語一義。", "旺文社。", "『1900』。"] },
+            { title: "Next Stage", comment: "文法問題集の代名詞。", hints: ["科目は英語だ。", "見開き構成。", "文法・語法。", "桐原書店。", "通称『ネクステ』。"] },
+            { title: "鉄壁", comment: "東大志望者のバイブル。", hints: ["科目は英語だ。", "非常に分厚い。", "東大専門塾。", "表紙は白。", "通称『鉄壁』だ。"] },
+            // --- 数学 ---
+            { title: "基礎問題精講", comment: "緑色の表紙で薄いのが特徴。", hints: ["科目は数学だ。", "精講シリーズ。", "問題数が厳選。", "緑色。", "通称『基礎問』。"] },
+            { title: "Focus Gold", comment: "青チャートの強力なライバル。", hints: ["科目は数学だ。", "黒い表紙。", "高級感がある。", "啓林館。", "通称『フォカゴ』。"] },
+            // --- 物理/化学 ---
+            { title: "物理のエッセンス", comment: "物理選択者の9割が持っている。", hints: ["科目は物理だ。", "非常に薄い。", "2冊ある。", "浜島清利先生。", "『良問の風』へ接続。"] },
+            { title: "化学重要問題集", comment: "理系受験生のシェアNo.1。", hints: ["科目は化学だ。", "数研出版。", "A問題とB問題。", "毎年色が変わる。", "通称『重問』。"] },
+            // --- 国語/社会 ---
+            { title: "古文単語ゴロゴ", comment: "強烈な語呂合わせ。", hints: ["科目は古文だ。", "イラストと語呂。", "板野博行先生。", "あなかしこ。", "『ゴロ』が入る。"] },
+            { title: "山川の詳説世界史", comment: "教科書だが最強の参考書。", hints: ["科目は世界史だ。", "教科書だ。", "山川出版社。", "論述の基礎。", "オレンジ色。"] }
+        ];
+
+        // ==========================================
+        //  2. グローバル変数・状態管理
+        // ==========================================
+        let allBooks = []; 
+        let currentBook = null;
+        let shuffledHints = [];
+        let hintIndex = 0; // ノーマルモード用
+        let score = 100;
+        let currentRank = "";
+        let editingIndex = null; 
+        let currentGameMode = 'normal'; // 'normal' or 'hard'
+        let openedHints = []; // ハードモード用：開封済みインデックス管理
+
+        const maxHints = 10;
+        const STORAGE_KEY = 'myQuizBooks_v8'; 
+
+        // DOM要素
+        const screens = {
+            start: document.getElementById('start-screen'),
+            game: document.getElementById('game-screen'),
+            result: document.getElementById('result-screen'),
+            admin: document.getElementById('admin-screen'),
+            login: document.getElementById('login-screen')
+        };
+        const spiritMessage = document.getElementById('spirit-message');
+        const hintsContainer = document.getElementById('hints-container');
+        const currentScoreEl = document.getElementById('current-score');
+        const answerInput = document.getElementById('answer-input');
+        const booksListEl = document.getElementById('books-list');
+        const nextHintBtn = document.getElementById('next-hint-btn');
+        const selectHintPanel = document.getElementById('select-hint-panel');
+        const hintButtonsGrid = document.getElementById('hint-buttons-grid');
+        const modeBadge = document.getElementById('mode-badge');
+        
+        // Admin
+        const customCountEl = document.getElementById('custom-count');
+        const adminPasswordInput = document.getElementById('admin-password');
+
+        // ==========================================
+        //  3. データロード・初期化処理
+        // ==========================================
+        function init() {
+            let storedBooks = null;
+            try { storedBooks = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch(e) {}
+            if (!storedBooks || !Array.isArray(storedBooks) || storedBooks.length === 0) {
+                storedBooks = [...staticBooksData];
+                saveToStorage(storedBooks);
+            }
+            allBooks = storedBooks;
+            updateDatalist();
+            customCountEl.textContent = allBooks.length;
+        }
+
+        function saveToStorage(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function updateDatalist() {
+            booksListEl.innerHTML = '';
+            const sortedBooks = [...allBooks].sort((a, b) => a.title.localeCompare(b.title, 'ja'));
+            sortedBooks.forEach(book => {
+                const option = document.createElement('option');
+                option.value = book.title;
+                booksListEl.appendChild(option);
+            });
+        }
+
+        // ==========================================
+        //  4. ゲームロジック
+        // ==========================================
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function prepareHints(book, mode) {
+            const allHints = [...book.hints];
+            
+            // パディング処理（ヒントが10個未満の場合）
+            const fillerHints = ["まだ焦る時間ではない...", "心を落ち着けて考えよ...", "知識の海に潜るのだ...", "答えは君の中にある...", "もう少しヒントが欲しいか？"];
+            let fillerIndex = 0;
+            while(allHints.length < maxHints) {
+                allHints.unshift(fillerHints[fillerIndex % fillerHints.length]);
+                fillerIndex++;
+            }
+
+            if (mode === 'normal') {
+                // ノーマル: 最後(決定打)は固定、それ以外をシャッフル
+                const lastHint = allHints.pop(); 
+                let selectedHints = shuffleArray(allHints).slice(0, maxHints - 1);
+                selectedHints.push(lastHint); 
+                return selectedHints;
+            } else {
+                // ハード: 完全シャッフル（決定打が最初に来る可能性もある）
+                return shuffleArray(allHints).slice(0, maxHints);
+            }
+        }
+
+        function startGame(mode) {
+            if(allBooks.length === 0) { alert("出題できる問題がありません！"); return; }
+
+            currentGameMode = mode;
+            score = 100;
+            hintIndex = 0; // ノーマル用
+            openedHints = []; // ハード用
+            answerInput.value = '';
+            hintsContainer.innerHTML = '';
+            currentScoreEl.textContent = score;
+
+            // モード別UI設定
+            if (mode === 'normal') {
+                modeBadge.textContent = "NORMAL";
+                modeBadge.className = "bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs font-bold";
+                nextHintBtn.classList.remove('hidden');
+                nextHintBtn.disabled = false;
+                nextHintBtn.innerHTML = `<span>💡 次のヒントを見る</span><span class="bg-white px-2 py-0.5 rounded text-xs text-indigo-500">-10点</span>`;
+                nextHintBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                selectHintPanel.classList.add('hidden');
+                updateMessage("挑戦者よ、この書物がわかるか？");
+            } else {
+                modeBadge.textContent = "HARD";
+                modeBadge.className = "bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-xs font-bold";
+                nextHintBtn.classList.add('hidden');
+                selectHintPanel.classList.remove('hidden');
+                renderHintButtons();
+                updateMessage("運命のカードを選べ。直感を信じるのだ。");
+            }
+
+            currentBook = allBooks[Math.floor(Math.random() * allBooks.length)];
+            shuffledHints = prepareHints(currentBook, mode);
+
+            switchScreen('game');
+
+            // ノーマルモードのみ、最初に1つ出す
+            if (mode === 'normal') {
+                addHintToDisplay(shuffledHints[0], 1);
+            }
+        }
+
+        // --- ノーマルモード用 ---
+        function showNextHint() {
+            if (hintIndex >= maxHints - 1) return;
+            hintIndex++;
+            score -= 10;
+            currentScoreEl.textContent = score;
+            addHintToDisplay(shuffledHints[hintIndex], hintIndex + 1);
+
+            const messages = ["", "ふむ、まだか。", "焦るでない。", "少しずつ見えてきたか？", "これならどうだ？", "折り返し地点だぞ。", "かなり絞られてきたはずだ。", "核心に迫っているぞ。", "あと少しだ...", "最後のヒントだ！"];
+            const msgIndex = Math.min(hintIndex, messages.length - 1);
+            updateMessage(messages[msgIndex]);
+
+            if (hintIndex === maxHints - 1) {
+                nextHintBtn.disabled = true;
+                nextHintBtn.textContent = "全てのヒントが出ました";
+                nextHintBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // --- ハードモード用 ---
+        function renderHintButtons() {
+            hintButtonsGrid.innerHTML = '';
+            for (let i = 0; i < maxHints; i++) {
+                const btn = document.createElement('button');
+                btn.className = "h-12 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded font-bold transition shadow-sm border border-purple-200";
+                btn.textContent = "?";
+                btn.onclick = () => revealSpecificHint(i, btn);
+                hintButtonsGrid.appendChild(btn);
+            }
+        }
+
+        function revealSpecificHint(index, btnElement) {
+            if (openedHints.includes(index)) return;
+            
+            openedHints.push(index);
+            score -= 15; // ハードモードはコストが高い
+            currentScoreEl.textContent = score;
+            
+            // ボタンを無効化
+            btnElement.disabled = true;
+            btnElement.className = "h-12 bg-gray-100 text-gray-400 rounded font-bold border border-gray-200 cursor-default";
+            btnElement.textContent = index + 1;
+
+            // ヒント表示
+            addHintToDisplay(shuffledHints[index], openedHints.length); // 番号は開けた順
+            
+            // メッセージ
+            const hardMessages = ["ほう、そこを開けるか。", "運命の悪戯か、必然か。", "役に立つ情報かな？", "もっとめくるが良い。", "点数が減っていくぞ..."];
+            updateMessage(hardMessages[Math.floor(Math.random() * hardMessages.length)]);
+        }
+
+        function addHintToDisplay(text, num) {
+            const div = document.createElement('div');
+            const isFiller = text.includes("...");
+            const bgColor = isFiller ? "bg-gray-50" : "bg-white";
+            const textColor = isFiller ? "text-gray-500" : "text-gray-700";
+            const borderColor = currentGameMode === 'normal' ? (isFiller ? "border-gray-300" : "border-indigo-400") : "border-purple-400";
+            const labelColor = currentGameMode === 'normal' ? "text-indigo-600" : "text-purple-600";
+            
+            div.className = `fade-in ${bgColor} border-l-4 ${borderColor} p-3 rounded text-sm ${textColor} shadow-sm flex flex-col`;
+            const labelText = isFiller ? "MESSAGE" : `HINT ${num}`;
+            div.innerHTML = `<span class="font-bold ${labelColor} text-xs mb-1">${labelText}</span><span class="text-base">${text}</span>`;
+            hintsContainer.appendChild(div);
+            hintsContainer.scrollTop = hintsContainer.scrollHeight;
+        }
+
+        function checkAnswer() {
+            const userAnswer = answerInput.value.trim();
+            if (!userAnswer) {
+                updateMessage("答えを入力するのだ！");
+                answerInput.focus();
+                return;
+            }
+            if (userAnswer === currentBook.title) {
+                endGame(true);
+            } else {
+                updateMessage(`「${userAnswer}」ではない...再考せよ。`);
+                answerInput.classList.add('bg-red-50', 'border-red-300');
+                setTimeout(() => answerInput.classList.remove('bg-red-50', 'border-red-300'), 1000);
+            }
+        }
+
+        function giveUp() {
+            if(confirm("本当に諦めるのか？")) {
+                score = 0;
+                endGame(false);
+            }
+        }
+
+        function endGame(isWin) {
+            switchScreen('result');
+            const resultTitle = document.getElementById('result-title');
+            const resultIcon = document.getElementById('result-icon');
+            const resultBookName = document.getElementById('result-book-name');
+            const finalScoreEl = document.getElementById('final-score');
+            const resultRank = document.getElementById('result-rank');
+            const resultComment = document.getElementById('result-comment');
+
+            resultBookName.textContent = currentBook.title;
+            finalScoreEl.textContent = score;
+            resultComment.textContent = currentBook.comment || "素晴らしい一冊だ。";
+
+            if (isWin) {
+                resultIcon.textContent = "🎉";
+                resultTitle.textContent = "正解！";
+                resultTitle.className = currentGameMode === 'normal' ? "text-2xl font-bold text-indigo-600" : "text-2xl font-bold text-purple-600";
+                
+                // ランク計算（モードによる違いはなし、点数勝負）
+                if (score === 100) { currentRank = "SS (神)"; resultRank.className = "text-xl font-bold text-yellow-500"; }
+                else if (score >= 80) { currentRank = "S (優秀)"; resultRank.className = "text-xl font-bold text-orange-500"; }
+                else if (score >= 40) { currentRank = "A (合格)"; resultRank.className = "text-xl font-bold text-green-500"; }
+                else { currentRank = "B (修行)"; resultRank.className = "text-xl font-bold text-gray-500"; }
+                resultRank.textContent = currentRank;
+                updateMessage("見事だ！次もその調子で頼むぞ。");
+            } else {
+                resultIcon.textContent = "🏳️";
+                resultTitle.textContent = "残念...";
+                resultTitle.className = "text-2xl font-bold text-gray-500";
+                currentRank = "-";
+                resultRank.textContent = currentRank;
+                updateMessage("知識のアップデートが必要だな。");
+            }
+        }
+
+        function createShareText() {
+            const title = currentBook.title;
+            const modeText = currentGameMode === 'normal' ? "ノーマル" : "ハード";
+            const resultText = score > 0 ? `${score}点（ランク${currentRank}）` : "降参しました...";
+            return `【参考書マイスターの挑戦状】\n[${modeText}モード]で「${title}」を当てました！\n結果：${resultText}\n\n#参考書クイズ #受験勉強\n`;
+        }
+
+        function shareOnTwitter() {
+            const text = createShareText();
+            const url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text);
+            window.open(url, '_blank');
+        }
+
+        function shareOnLine() {
+            const text = createShareText();
+            const url = "https://line.me/R/msg/text/?" + encodeURIComponent(text);
+            window.open(url, '_blank');
+        }
+
+        // ==========================================
+        //  5. ログイン・管理機能
+        // ==========================================
+        function resetGame() {
+            backToStart();
+        }
+
+        function backToStart() {
+            switchScreen('start');
+            updateMessage("さあ、私の知識ライブラリに挑むが良い。");
+        }
+
+        function goToLogin() {
+            switchScreen('login');
+            updateMessage("パスワードを入力せよ。");
+            adminPasswordInput.value = ''; 
+        }
+
+        function attemptLogin() {
+            const pw = adminPasswordInput.value;
+            if (pw === 'admin') {
+                toggleAdminMode();
+            } else {
+                alert("パスワードが違います！\n(ヒント: admin)");
+                adminPasswordInput.value = '';
+                adminPasswordInput.focus();
+            }
+        }
+
+        function logoutAdmin() {
+            if(confirm("管理画面からログアウトしますか？")) backToStart();
+        }
+
+        function toggleAdminMode() {
+            switchScreen('admin');
+            updateMessage("管理者権限でライブラリを操作中...");
+            renderBooksList();
+            cancelEdit(); 
+        }
+
+        function renderBooksList() {
+            const listContainer = document.getElementById('books-list-container');
+            listContainer.innerHTML = '';
+            if (allBooks.length === 0) {
+                listContainer.innerHTML = '<p class="text-xs text-gray-400 py-2">登録されたデータはありません。</p>';
+                return;
+            }
+            allBooks.forEach((book, index) => {
+                const div = document.createElement('div');
+                div.className = "bg-white p-2 rounded border border-gray-100 flex justify-between items-center text-sm shadow-sm";
+                if (index === editingIndex) div.className += " border-indigo-400 bg-indigo-50";
+                div.innerHTML = `
+                    <div class="truncate flex-1 mr-2"><span class="font-bold text-gray-700">${book.title}</span></div>
+                    <div class="flex gap-1 flex-shrink-0">
+                        <button onclick="editBook(${index})" class="bg-blue-100 text-blue-600 px-2 py-1 rounded text-xs hover:bg-blue-200 font-bold transition">編集</button>
+                        <button onclick="deleteBook(${index})" class="bg-red-100 text-red-600 px-2 py-1 rounded text-xs hover:bg-red-200 font-bold transition">削除</button>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            });
+            customCountEl.textContent = allBooks.length;
+        }
+
+        function editBook(index) {
+            const book = allBooks[index];
+            if(!book) return;
+            editingIndex = index;
+            document.getElementById('form-title').textContent = "参考書を編集";
+            document.getElementById('form-title').className = "font-bold text-sm text-blue-600";
+            document.getElementById('save-btn').textContent = "更新して保存";
+            document.getElementById('save-btn').className = "w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded shadow text-sm";
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+
+            document.getElementById('new-title').value = book.title;
+            document.getElementById('new-comment').value = book.comment || "";
+            for(let i=1; i<=10; i++) document.getElementById(`new-hint-${i}`).value = '';
+            if(book.hints && Array.isArray(book.hints)) {
+                book.hints.forEach((hint, i) => { if(i < 10) document.getElementById(`new-hint-${i+1}`).value = hint; });
+            }
+            renderBooksList();
+        }
+
+        function cancelEdit() {
+            editingIndex = null;
+            clearForm();
+            document.getElementById('form-title').textContent = "新規参考書を追加";
+            document.getElementById('form-title').className = "font-bold text-sm text-indigo-600";
+            document.getElementById('save-btn').textContent = "リストに追加して保存";
+            document.getElementById('save-btn').className = "w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded shadow text-sm";
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+            renderBooksList();
+        }
+
+        function clearForm() {
+            document.getElementById('new-title').value = '';
+            document.getElementById('new-comment').value = '';
+            for(let i=1; i<=10; i++) document.getElementById(`new-hint-${i}`).value = '';
+        }
+
+        function handleSaveBook() {
+            const title = document.getElementById('new-title').value.trim();
+            const comment = document.getElementById('new-comment').value.trim();
+            const hints = [];
+            for(let i=1; i<=10; i++) {
+                const h = document.getElementById(`new-hint-${i}`).value.trim();
+                if(h) hints.push(h);
+            }
+            if (!title || hints.length === 0) {
+                alert("「書籍名」と「少なくとも1つのヒント」は必須です！");
+                return;
+            }
+            const bookData = { title, comment, hints };
+            if (editingIndex !== null) {
+                allBooks[editingIndex] = bookData;
+                alert(`「${title}」を更新しました！`);
+            } else {
+                allBooks.push(bookData);
+                alert(`「${title}」を追加しました！`);
+            }
+            saveToStorage(allBooks);
+            cancelEdit(); 
+            init(); 
+        }
+
+        function deleteBook(index) {
+            if(!confirm("本当に削除しますか？\n（この操作は元に戻せません）")) return;
+            allBooks.splice(index, 1);
+            saveToStorage(allBooks);
+            if(editingIndex === index) cancelEdit();
+            else if (editingIndex !== null && editingIndex > index) editingIndex--;
+            renderBooksList();
+            init();
+        }
+
+        function resetToDefault() {
+            if(!confirm("【警告】\nすべてのデータを削除し、初期状態に戻します。\n本当によろしいですか？")) return;
+            localStorage.removeItem(STORAGE_KEY);
+            alert("データを初期化しました。");
+            init(); 
+            renderBooksList();
+        }
+
+        function exportData() {
+            if(allBooks.length === 0) { alert("データがありません。"); return; }
+            const jsonStr = JSON.stringify(allBooks, null, 2);
+            navigator.clipboard.writeText(jsonStr).then(() => { alert("コピーしました！"); });
+        }
+
+        function switchScreen(screenName) {
+            Object.values(screens).forEach(el => el.classList.add('hidden'));
+            screens[screenName].classList.remove('hidden');
+        }
+
+        function updateMessage(text) {
+            spiritMessage.textContent = text;
+        }
+
+        init();
+    </script>
+</body>
+</html>
